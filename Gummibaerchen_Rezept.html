@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zitronen-Gummibärchen Rezept</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --y: #F5C518;
+    --yd: #B8900E;
+    --yl: #FFFBEA;
+    --ym: #FFF3C0;
+    --text: #1C1A10;
+    --muted: #7A7260;
+    --border: #E5DDB8;
+    --bg: #FDFBF0;
+    --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .page { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+  h1 { font-size: 2.2rem; font-weight: normal; letter-spacing: -0.02em; margin-bottom: 0.2rem; }
+  .emoji-head { font-size: 2.8rem; display: block; margin-bottom: 0.5rem; }
+  .lead { font-family: -apple-system, sans-serif; font-size: 0.9rem; color: var(--muted); margin-bottom: 2rem; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; }
+
+  .card-title { font-family: -apple-system, sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 0.85rem; }
+  .row:last-child { margin-bottom: 0; }
+  .row-label { font-family: -apple-system, sans-serif; font-size: 0.875rem; color: var(--text); min-width: 150px; }
+  .row-label small { display: block; font-size: 0.72rem; color: var(--muted); }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--y);
+    border: 2px solid var(--yd);
+    cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--y);
+    border: 2px solid var(--yd);
+    cursor: pointer;
+  }
+
+  .val-box {
+    font-family: -apple-system, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 70px;
+    text-align: right;
+    color: #7A5900;
+  }
+
+  .toggle-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0.85rem; }
+  .toggle-row:last-child { margin-bottom: 0; }
+  .tbtn {
+    font-family: -apple-system, sans-serif;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.12s;
+    color: var(--text);
+  }
+  .tbtn:hover { border-color: var(--y); background: var(--yl); }
+  .tbtn.on { background: var(--y); border-color: var(--yd); color: #3A2C00; font-weight: 600; }
+
+  .result-card {
+    background: var(--yl);
+    border: 1.5px solid var(--y);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .result-title { font-size: 1.2rem; font-weight: normal; margin-bottom: 1rem; }
+
+  table.ing { width: 100%; border-collapse: collapse; font-family: -apple-system, sans-serif; font-size: 0.875rem; margin-bottom: 1.25rem; }
+  table.ing td { padding: 7px 4px; border-bottom: 1px solid #E8D98A; }
+  table.ing tr:last-child td { border-bottom: none; }
+  table.ing td:first-child { color: var(--muted); }
+  table.ing td:last-child { text-align: right; font-weight: 600; color: #7A5900; }
+
+  .steps { font-family: -apple-system, sans-serif; font-size: 0.875rem; }
+  .step { display: flex; gap: 10px; margin-bottom: 10px; }
+  .snum { min-width: 22px; height: 22px; border-radius: 50%; background: var(--y); color: #3A2C00; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; flex-shrink: 0; }
+  .stxt { line-height: 1.55; color: var(--text); }
+  .stxt b { color: #5A4000; }
+
+  .warn { font-family: -apple-system, sans-serif; font-size: 0.8rem; color: #7A5900; background: #FFF3C0; border-left: 3px solid var(--y); padding: 9px 12px; border-radius: 0 8px 8px 0; margin-top: 10px; }
+
+  .tip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 0.75rem; }
+  .tip-chip { font-family: -apple-system, sans-serif; font-size: 0.75rem; background: white; border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; color: var(--muted); }
+  .tip-chip b { color: var(--text); }
+
+  .btn-print {
+    display: block; width: 100%;
+    padding: 15px;
+    background: var(--text);
+    color: white;
+    font-family: -apple-system, sans-serif;
+    font-size: 1rem; font-weight: 500;
+    border: none; border-radius: 12px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: background 0.15s;
+    margin-bottom: 0.5rem;
+  }
+  .btn-print:hover { background: #3A3820; }
+  .btn-print:disabled { background: #aaa; cursor: default; }
+  .print-note { font-family: -apple-system, sans-serif; font-size: 0.78rem; color: var(--muted); text-align: center; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header style="margin-bottom:2rem;">
+    <span class="emoji-head">🍋</span>
+    <h1>Zitronen-Gummibärchen</h1>
+    <p class="lead">Passe alle Zutaten an – alles wird automatisch neu berechnet. Dann als PDF herunterladen und ausdrucken.</p>
+  </header>
+
+  <!-- MENGE -->
+  <div class="card">
+    <div class="card-title">Menge</div>
+    <div class="row">
+      <span class="row-label">Anzahl Gummibärchen</span>
+      <input type="range" id="qty" min="20" max="200" step="10" value="40" oninput="calc()">
+      <span class="val-box" id="v-qty">40 Stk.</span>
+    </div>
+  </div>
+
+  <!-- GELATINE -->
+  <div class="card">
+    <div class="card-title">Gelatine</div>
+    <div class="row">
+      <span class="row-label">Gelatineblätter<small>Mehr = fester</small></span>
+      <input type="range" id="gel" min="4" max="20" step="1" value="10" oninput="calc()">
+      <span class="val-box" id="v-gel">10 Bl.</span>
+    </div>
+  </div>
+
+  <!-- FLÜSSIGKEITEN -->
+  <div class="card">
+    <div class="card-title">Flüssigkeit &amp; Aroma</div>
+
+    <div style="margin-bottom:0.75rem;">
+      <div class="card-title" style="margin-bottom:0.4rem;">Art des Zitronengeschmacks</div>
+      <div class="toggle-row">
+        <button class="tbtn on" id="tb-both" onclick="setAroma('both')">Saft + Aroma</button>
+        <button class="tbtn" id="tb-juice" onclick="setAroma('juice')">Nur Zitronensaft</button>
+        <button class="tbtn" id="tb-aroma" onclick="setAroma('aroma')">Nur Dr. Oetker</button>
+        <button class="tbtn" id="tb-none" onclick="setAroma('none')">Ohne</button>
+      </div>
+    </div>
+
+    <div id="juice-row" class="row">
+      <span class="row-label">Zitronensaft<small>Macht es saftiger</small></span>
+      <input type="range" id="juice" min="0" max="150" step="5" value="60" oninput="calc()">
+      <span class="val-box" id="v-juice">60 ml</span>
+    </div>
+    <div id="water-row" class="row">
+      <span class="row-label">Wasser</span>
+      <input type="range" id="water" min="0" max="150" step="5" value="20" oninput="calc()">
+      <span class="val-box" id="v-water">20 ml</span>
+    </div>
+    <div id="aroma-row" class="row">
+      <span class="row-label">Dr. Oetker Zitronenaroma<small>Fläschchen à 2ml</small></span>
+      <input type="range" id="aroma-qty" min="1" max="8" step="1" value="2" oninput="calc()">
+      <span class="val-box" id="v-aroma">2 Fl.</span>
+    </div>
+  </div>
+
+  <!-- ZUCKER -->
+  <div class="card">
+    <div class="card-title">Zucker</div>
+    <div class="row">
+      <span class="row-label">Zucker<small>Mehr = süsser</small></span>
+      <input type="range" id="sugar" min="20" max="150" step="5" value="80" oninput="calc()">
+      <span class="val-box" id="v-sugar">80 g</span>
+    </div>
+    <div class="row">
+      <span class="row-label">Zitronensäure<small>Macht es saurer</small></span>
+      <input type="range" id="acid" min="0" max="3" step="0.25" value="0" oninput="calc()">
+      <span class="val-box" id="v-acid">0 TL</span>
+    </div>
+  </div>
+
+  <!-- EXTRAS -->
+  <div class="card">
+    <div class="card-title">Extras</div>
+    <div class="card-title" style="margin-bottom:0.4rem;">Lebensmittelfarbe</div>
+    <div class="toggle-row" style="margin-bottom:0.85rem;">
+      <button class="tbtn on" id="tb-color-yes" onclick="setColor(true)">Ja – Gelb</button>
+      <button class="tbtn" id="tb-color-no" onclick="setColor(false)">Nein</button>
+    </div>
+    <div class="card-title" style="margin-bottom:0.4rem;">In Zucker wälzen?</div>
+    <div class="toggle-row">
+      <button class="tbtn" id="tb-roll-yes" onclick="setRoll(true)">Ja</button>
+      <button class="tbtn on" id="tb-roll-no" onclick="setRoll(false)">Nein</button>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- RESULTAT -->
+  <div class="result-card">
+    <div class="result-title" id="res-title">Dein Rezept – 40 Gummibärchen</div>
+
+    <table class="ing" id="ing-table"></table>
+
+    <div class="steps" id="steps-div"></div>
+    <div class="warn" id="warn-div" style="display:none;"></div>
+
+    <div class="tip-row" id="tip-row"></div>
+  </div>
+
+  <button class="btn-print" id="print-btn" onclick="generatePDF()">📄 Als PDF herunterladen &amp; drucken</button>
+  <p class="print-note">Das PDF öffnet sich automatisch – dann einfach drucken (Strg+P / Cmd+P)</p>
+
+</div>
+
+<script>
+let aromaMode = 'both';
+let hasColor = true;
+let doRoll = false;
+
+function setAroma(m) {
+  aromaMode = m;
+  ['both','juice','aroma','none'].forEach(k => {
+    document.getElementById('tb-'+k).classList.toggle('on', k === m);
+  });
+  const showJuice = m === 'both' || m === 'juice';
+  const showAroma = m === 'both' || m === 'aroma';
+  document.getElementById('juice-row').style.display = showJuice ? 'flex' : 'none';
+  document.getElementById('water-row').style.display = 'flex';
+  document.getElementById('aroma-row').style.display = showAroma ? 'flex' : 'none';
+  if (m === 'juice') { document.getElementById('juice').value = 80; document.getElementById('water').value = 20; }
+  if (m === 'aroma') { document.getElementById('water').value = 80; }
+  if (m === 'both') { document.getElementById('juice').value = 60; document.getElementById('water').value = 20; }
+  if (m === 'none') { document.getElementById('water').value = 80; }
+  calc();
+}
+
+function setColor(v) {
+  hasColor = v;
+  document.getElementById('tb-color-yes').classList.toggle('on', v);
+  document.getElementById('tb-color-no').classList.toggle('on', !v);
+  calc();
+}
+
+function setRoll(v) {
+  doRoll = v;
+  document.getElementById('tb-roll-yes').classList.toggle('on', v);
+  document.getElementById('tb-roll-no').classList.toggle('on', !v);
+  calc();
+}
+
+function v(id) { return parseFloat(document.getElementById(id).value); }
+function sv(id, val, unit) { document.getElementById('v-'+id).textContent = val + ' ' + unit; }
+function rnd(n, dec=0) { return parseFloat(n.toFixed(dec)); }
+
+function calc() {
+  const qty = v('qty');
+  const gel = v('gel');
+  const juice = v('juice');
+  const water = v('water');
+  const aromaQ = v('aroma-qty');
+  const sugar = v('sugar');
+  const acid = v('acid');
+
+  sv('qty', qty, 'Stk.');
+  sv('gel', gel, 'Bl.');
+  sv('juice', juice, 'ml');
+  sv('water', water, 'ml');
+  sv('aroma', aromaQ, 'Fl.');
+  sv('sugar', sugar, 'g');
+  sv('acid', rnd(acid,2), 'TL');
+
+  document.getElementById('res-title').textContent = 'Dein Rezept – ' + qty + ' Gummibärchen';
+
+  // Build ingredients
+  let ings = [];
+  ings.push(['Gelatineblätter', gel + ' Blätter']);
+  ings.push(['Zucker', sugar + ' g']);
+
+  if (aromaMode === 'both') {
+    ings.push(['Zitronensaft (frisch)', juice + ' ml']);
+    ings.push(['Wasser', water + ' ml']);
+    ings.push(['Dr. Oetker Zitronenaroma', aromaQ + ' Fläschchen']);
+  } else if (aromaMode === 'juice') {
+    ings.push(['Zitronensaft (frisch)', juice + ' ml']);
+    ings.push(['Wasser', water + ' ml']);
+    if (acid > 0) ings.push(['Zitronensäure', rnd(acid,2) + ' TL']);
+  } else if (aromaMode === 'aroma') {
+    ings.push(['Wasser', water + ' ml']);
+    ings.push(['Dr. Oetker Zitronenaroma', aromaQ + ' Fläschchen']);
+  } else {
+    ings.push(['Wasser', water + ' ml']);
+    if (acid > 0) ings.push(['Zitronensäure', rnd(acid,2) + ' TL']);
+  }
+
+  if (hasColor) ings.push(['Lebensmittelfarbe Gelb', '2–3 Tropfen']);
+  if (doRoll) ings.push(['Zucker zum Wälzen', 'nach Bedarf']);
+
+  document.getElementById('ing-table').innerHTML = ings.map(([n,v]) =>
+    `<tr><td>${n}</td><td>${v}</td></tr>`
+  ).join('');
+
+  // Steps
+  const totalLiquid = (aromaMode === 'both' || aromaMode === 'juice' ? juice : 0) + water;
+  let s4 = '';
+  if (aromaMode === 'both') s4 = `${juice} ml Zitronensaft und ${aromaQ} Fläschchen Zitronenaroma einrühren. Durch ein feines Sieb giessen.`;
+  else if (aromaMode === 'juice') s4 = `${juice} ml Zitronensaft einrühren${acid > 0 ? ` und ${rnd(acid,2)} TL Zitronensäure dazugeben` : ''}. Erst nach dem Herd – nicht kochen!`;
+  else if (aromaMode === 'aroma') s4 = `${aromaQ} Fläschchen Dr. Oetker Zitronenaroma einrühren.`;
+  else s4 = `Masse abschmecken${acid > 0 ? ` und ${rnd(acid,2)} TL Zitronensäure einrühren` : ''}. Optional ein anderes Aroma verwenden.`;
+
+  const steps = [
+    ['Gelatine einweichen', `${gel} Blätter in kaltem Wasser 5–10 Minuten einweichen, bis sie weich sind. Danach gut ausdrücken.`],
+    ['Sirup kochen', `${sugar} g Zucker mit ${water} ml Wasser in einem Topf erhitzen und rühren, bis der Zucker aufgelöst ist. Nicht kochen lassen – nur warm machen.`],
+    ['Gelatine auflösen', `Topf vom Herd nehmen. Ausgedrückte Gelatineblätter einrühren bis vollständig aufgelöst.`],
+    ['Aroma einrühren', s4],
+    ['In Formen giessen', `Masse in Silikonformen (Bärchen-Motiv) giessen. Eine Pipette oder Spritze helfen sehr dabei. Bei ${hasColor ? 'gelber Lebensmittelfarbe: vorher 2–3 Tropfen einrühren.' : 'keiner Farbe: Masse bleibt natürlich gelblich.'}`],
+    ['Kühl stellen', `Mindestens 2 Stunden in den Kühlschrank, bis die Gummibärchen fest sind.`],
+    ['Herauslösen', `Gummibärchen vorsichtig aus den Formen drücken.${doRoll ? ' In Zucker wälzen damit sie nicht kleben.' : ''}`],
+  ];
+
+  document.getElementById('steps-div').innerHTML = steps.map(([t,tx], i) =>
+    `<div class="step"><div class="snum">${i+1}</div><div class="stxt"><b>${t}:</b> ${tx}</div></div>`
+  ).join('');
+
+  // Warning
+  const wb = document.getElementById('warn-div');
+  let warns = [];
+  if (gel > 15) warns.push('Viele Gelatineblätter machen die Bärchen sehr fest – fast wie Fruchtgummi.');
+  if (gel < 6) warns.push('Wenig Gelatine ergibt sehr weiche, wackelige Bärchen.');
+  if (totalLiquid > 120) warns.push('Viel Flüssigkeit: die Bärchen brauchen evtl. etwas länger zum Festwerden.');
+  if (aromaMode === 'none') warns.push('Ohne Zitronengeschmack werden die Bärchen neutral-süss. Tipp: ein anderes Aroma verwenden.');
+  if (warns.length) { wb.innerHTML = warns.join('<br>'); wb.style.display = 'block'; }
+  else wb.style.display = 'none';
+
+  // Tips
+  const tips = [];
+  const festigkeit = gel <= 7 ? 'weich' : gel <= 12 ? 'klassisch' : 'sehr fest';
+  tips.push(`<div class="tip-chip">Festigkeit: <b>${festigkeit}</b></div>`);
+  tips.push(`<div class="tip-chip">Flüssigkeit total: <b>${totalLiquid} ml</b></div>`);
+  tips.push(`<div class="tip-chip">Kühlzeit: <b>mind. 2 Std.</b></div>`);
+  document.getElementById('tip-row').innerHTML = tips.join('');
+}
+
+function generatePDF() {
+  const btn = document.getElementById('print-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ PDF wird erstellt...';
+
+  setTimeout(() => {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+      const W = 210, ml = 20, mr = 20, cw = W - ml - mr;
+      let y = 20;
+      const yellow = [245, 197, 24];
+      const yellowDark = [130, 95, 0];
+      const bg = [255, 251, 234];
+      const textCol = [28, 26, 16];
+      const mutedCol = [120, 114, 96];
+
+      // Header bg stripe
+      doc.setFillColor(...bg);
+      doc.rect(0, 0, 210, 45, 'F');
+
+      // Title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(...textCol);
+      doc.text('Zitronen-Gummibärchen', ml, y + 10);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...mutedCol);
+      const qty = v('qty');
+      const gel = v('gel');
+      const juice = v('juice');
+      const water = v('water');
+      const aromaQ = v('aroma-qty');
+      const sugar = v('sugar');
+      const acid = v('acid');
+      const totalLiquid = (aromaMode === 'both' || aromaMode === 'juice' ? juice : 0) + water;
+      doc.text(`${qty} Gummibärchen  |  Zubereitungszeit: ~15 Min.  |  Kühlzeit: mind. 2 Stunden`, ml, y + 18);
+
+      y = 52;
+
+      // Ingredients box
+      doc.setFillColor(...yellow);
+      doc.roundedRect(ml, y, cw, 7, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(50, 38, 0);
+      doc.text('ZUTATEN', ml + 4, y + 5);
+      y += 10;
+
+      const ings = [];
+      ings.push(['Gelatineblätter', gel + ' Blätter']);
+      ings.push(['Zucker', sugar + ' g']);
+      if (aromaMode === 'both') {
+        ings.push(['Zitronensaft (frisch gepresst)', juice + ' ml']);
+        ings.push(['Wasser', water + ' ml']);
+        ings.push(['Dr. Oetker Zitronenaroma', aromaQ + ' Fläschchen']);
+      } else if (aromaMode === 'juice') {
+        ings.push(['Zitronensaft (frisch gepresst)', juice + ' ml']);
+        ings.push(['Wasser', water + ' ml']);
+        if (acid > 0) ings.push(['Zitronensäure', rnd(acid,2) + ' TL']);
+      } else if (aromaMode === 'aroma') {
+        ings.push(['Wasser', water + ' ml']);
+        ings.push(['Dr. Oetker Zitronenaroma', aromaQ + ' Fläschchen']);
+      } else {
+        ings.push(['Wasser', water + ' ml']);
+        if (acid > 0) ings.push(['Zitronensäure', rnd(acid,2) + ' TL']);
+      }
+      if (hasColor) ings.push(['Lebensmittelfarbe Gelb', '2–3 Tropfen']);
+      if (doRoll) ings.push(['Zucker zum Wälzen', 'nach Bedarf']);
+
+      ings.forEach(([name, val], i) => {
+        if (i % 2 === 0) {
+          doc.setFillColor(255, 251, 234);
+          doc.rect(ml, y, cw, 7, 'F');
+        }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(...mutedCol);
+        doc.text(name, ml + 4, y + 5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...yellowDark);
+        doc.text(val, W - mr - 4, y + 5, { align: 'right' });
+        y += 7;
+      });
+
+      y += 8;
+
+      // Steps
+      doc.setFillColor(...yellow);
+      doc.roundedRect(ml, y, cw, 7, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(50, 38, 0);
+      doc.text('ZUBEREITUNG', ml + 4, y + 5);
+      y += 10;
+
+      let s4 = '';
+      if (aromaMode === 'both') s4 = `${juice} ml Zitronensaft und ${aromaQ} Fl. Zitronenaroma einrühren. Durch Sieb giessen.`;
+      else if (aromaMode === 'juice') s4 = `${juice} ml Zitronensaft einrühren${acid > 0 ? ` + ${rnd(acid,2)} TL Zitronensäure` : ''}. Nicht kochen!`;
+      else if (aromaMode === 'aroma') s4 = `${aromaQ} Fläschchen Dr. Oetker Zitronenaroma einrühren.`;
+      else s4 = `Masse abschmecken${acid > 0 ? ` + ${rnd(acid,2)} TL Zitronensäure` : ''}.`;
+
+      const steps = [
+        [`1. Gelatine einweichen`, `${gel} Blätter in kaltem Wasser 5–10 Min. einweichen. Gut ausdrücken.`],
+        [`2. Sirup kochen`, `${sugar} g Zucker mit ${water} ml Wasser erhitzen bis aufgelöst. Nicht kochen!`],
+        [`3. Gelatine auflösen`, `Topf vom Herd. Gelatine einrühren bis vollständig aufgelöst.`],
+        [`4. Aroma einrühren`, s4],
+        [`5. In Formen giessen`, `Masse in Silikonformen giessen. Pipette oder Spritze verwenden.`],
+        [`6. Kühl stellen`, `Mindestens 2 Stunden in den Kühlschrank bis fest.`],
+        [`7. Herauslösen`, `Gummibärchen vorsichtig herausdrücken.${doRoll ? ' In Zucker wälzen.' : ''}`],
+      ];
+
+      steps.forEach(([title, text], i) => {
+        // Circle
+        doc.setFillColor(...yellow);
+        doc.circle(ml + 4, y + 3, 3.5, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(50, 38, 0);
+        doc.text(String(i+1), ml + 4, y + 4.5, { align: 'center' });
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...textCol);
+        doc.text(title, ml + 10, y + 2.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(...mutedCol);
+        const lines = doc.splitTextToSize(text, cw - 14);
+        doc.text(lines, ml + 10, y + 7.5);
+        y += 7 + lines.length * 5 + 3;
+      });
+
+      // Footer
+      y = Math.max(y + 5, 270);
+      doc.setFillColor(...yellow);
+      doc.rect(0, 277, 210, 20, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(80, 60, 0);
+      doc.text('Zitronen-Gummibärchen – selbstgemacht', ml, 285);
+      doc.text('Festigkeit: ' + (gel <= 7 ? 'weich' : gel <= 12 ? 'klassisch' : 'sehr fest') + '  |  Flüssigkeit total: ' + totalLiquid + ' ml', W - mr, 285, { align: 'right' });
+
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Gummibaerchen_Rezept.pdf';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    } catch(e) {
+      alert('Fehler beim Erstellen des PDFs: ' + e.message);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '📄 Als PDF herunterladen &amp; drucken';
+  }, 100);
+}
+
+// Init
+setAroma('both');
+calc();
+</script>
+</body>
+</html>

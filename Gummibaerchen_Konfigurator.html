@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gummibärchen Rezept-Konfigurator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg: #FAFAF7;
+  --card: #FFFFFF;
+  --border: #E4E0D4;
+  --text: #1A1916;
+  --muted: #7A7567;
+  --accent: #F5C518;
+  --accent-d: #B8920A;
+  --accent-text: #3D2E00;
+  --accent-bg: #FFFBEA;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var(--bg); color: var(--text); }
+.page { max-width: 740px; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
+
+/* Header */
+.hdr { text-align: center; margin-bottom: 2.5rem; }
+.hdr-icon { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+.hdr h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.4rem; }
+.hdr p { font-size: 0.9rem; color: var(--muted); }
+
+/* Section cards */
+.sec { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+.sec-title { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+
+/* Flavor selector */
+.flavor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fbtn { border: 1.5px solid var(--border); border-radius: 12px; background: white; padding: 10px 6px; cursor: pointer; text-align: center; transition: all 0.12s; }
+.fbtn .ficon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+.fbtn .fname { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+.fbtn.on { border-color: var(--accent); background: var(--accent-bg); }
+.fbtn.on .fname { color: var(--accent-text); }
+
+/* Sliders */
+.srow { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-bottom: 0.9rem; }
+.srow:last-child { margin-bottom: 0; }
+.slabel { font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.sdesc { font-size: 0.72rem; color: var(--muted); }
+.sright { display: flex; align-items: center; gap: 8px; grid-column: 1 / -1; margin-top: 2px; }
+.sval { font-size: 0.82rem; font-weight: 700; color: var(--accent-text); min-width: 64px; text-align: right; background: var(--accent-bg); border: 1px solid #E8D070; border-radius: 6px; padding: 3px 7px; }
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%; height: 4px;
+  background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct, 50%), var(--border) var(--pct, 50%));
+  border-radius: 2px; outline: none; cursor: pointer; flex: 1;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--accent-d); cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+input[type=range]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--accent-d);
+  background: var(--accent); cursor: pointer;
+}
+
+/* Toggle chips */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-size: 0.78rem; padding: 5px 12px; border: 1px solid var(--border); border-radius: 20px; background: white; cursor: pointer; transition: all 0.12s; color: var(--text); }
+.chip:hover { border-color: var(--accent); }
+.chip.on { background: var(--accent); border-color: var(--accent-d); color: var(--accent-text); font-weight: 600; }
+
+/* Divider */
+hr.div { border: none; border-top: 1px solid var(--border); margin: 1.1rem 0; }
+
+/* Result */
+.result { background: var(--accent-bg); border: 1.5px solid var(--accent); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; }
+.res-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; }
+.res-title { font-size: 1.1rem; font-weight: 700; }
+.res-meta { font-size: 0.75rem; color: var(--muted); }
+
+/* Ingredient table */
+.itable { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-bottom: 1rem; }
+.itable td { padding: 6px 4px; border-bottom: 1px solid #EAD96A; }
+.itable tr:last-child td { border-bottom: none; }
+.itable .iname { color: var(--muted); }
+.itable .ival { text-align: right; font-weight: 700; color: var(--accent-text); white-space: nowrap; }
+
+/* Steps */
+.steps { display: flex; flex-direction: column; gap: 9px; }
+.step { display: flex; gap: 10px; align-items: flex-start; }
+.snum { min-width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-text); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.stxt { font-size: 0.86rem; line-height: 1.55; color: var(--text); }
+.stxt strong { color: var(--accent-text); }
+
+/* Warnings */
+.warns { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.warn { font-size: 0.78rem; color: var(--accent-text); background: #FFF3B0; border-left: 3px solid var(--accent); padding: 7px 10px; border-radius: 0 6px 6px 0; }
+
+/* Tips row */
+.tips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tip { font-size: 0.72rem; background: white; border: 1px solid var(--border); border-radius: 20px; padding: 3px 9px; color: var(--muted); }
+.tip b { color: var(--text); }
+
+/* Print button */
+.btnrow { display: flex; gap: 8px; }
+.btn-pdf { flex: 1; padding: 14px; background: var(--text); color: white; font-size: 0.95rem; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: background 0.15s; }
+.btn-pdf:hover { background: #333; }
+.btn-pdf:disabled { background: #aaa; cursor: default; }
+.note { font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 0.4rem; }
+
+@media (max-width: 520px) {
+  .flavor-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="hdr">
+  <span class="hdr-icon">🐻</span>
+  <h1>Gummibärchen Konfigurator</h1>
+  <p>Professionelles Rezept – alle Zutaten verknüpft, PDF zum Drucken</p>
+</header>
+
+<!-- SORTE -->
+<div class="sec">
+  <div class="sec-title">Sorte wählen</div>
+  <div class="flavor-grid" id="flavor-grid"></div>
+</div>
+
+<!-- MENGE -->
+<div class="sec">
+  <div class="sec-title">Menge</div>
+  <div class="srow">
+    <div>
+      <div class="slabel">Anzahl Gummibärchen</div>
+      <div class="sdesc">Basis: 40 Stück pro Portion</div>
+    </div>
+  </div>
+  <div class="sright">
+    <input type="range" id="s-qty" min="20" max="200" step="10" value="40">
+    <div class="val-box sval" id="v-qty">40 Stk.</div>
+  </div>
+</div>
+
+<!-- GELATINE & FESTIGKEIT -->
+<div class="sec">
+  <div class="sec-title">Gelatine &amp; Festigkeit</div>
+  <div class="srow">
+    <div>
+      <div class="slabel">Gelatineblätter</div>
+      <div class="sdesc" id="gel-desc">Mehr = fester (alle anderen Mengen passen sich an)</div>
+    </div>
+  </div>
+  <div class="sright">
+    <input type="range" id="s-gel" min="4" max="20" step="1" value="10">
+    <div class="sval" id="v-gel">10 Bl.</div>
+  </div>
+</div>
+
+<!-- FLÜSSIGKEITEN -->
+<div class="sec">
+  <div class="sec-title">Flüssigkeiten &amp; Aroma</div>
+
+  <div class="srow">
+    <div><div class="slabel" id="juice-label">Fruchtsaft</div><div class="sdesc">Skaliert mit Gelatine</div></div>
+  </div>
+  <div class="sright">
+    <input type="range" id="s-juice" min="0" max="150" step="5" value="60">
+    <div class="sval" id="v-juice">60 ml</div>
+  </div>
+
+  <div class="srow" style="margin-top:0.5rem;">
+    <div><div class="slabel">Wasser</div><div class="sdesc">Für den Sirup</div></div>
+  </div>
+  <div class="sright">
+    <input type="range" id="s-water" min="10" max="120" step="5" value="20">
+    <div class="sval" id="v-water">20 ml</div>
+  </div>
+
+  <div id="aroma-wrap" style="margin-top:0.5rem;">
+    <div class="srow">
+      <div><div class="slabel">Dr. Oetker Aroma</div><div class="sdesc">Fläschchen à 2 ml</div></div>
+    </div>
+    <div class="sright">
+      <input type="range" id="s-aroma" min="1" max="8" step="1" value="2">
+      <div class="sval" id="v-aroma">2 Fl.</div>
+    </div>
+  </div>
+
+  <hr class="div">
+  <div class="sec-title" style="margin-bottom:0.5rem;">Aroma-Modus</div>
+  <div class="chips" id="chips-aroma">
+    <button class="chip on" onclick="setAromaMode('both')">Saft + Aroma</button>
+    <button class="chip" onclick="setAromaMode('juice')">Nur Saft</button>
+    <button class="chip" onclick="setAromaMode('aroma')">Nur Aroma</button>
+    <button class="chip" onclick="setAromaMode('none')">Ohne</button>
+  </div>
+</div>
+
+<!-- ZUCKER & SÜSSE -->
+<div class="sec">
+  <div class="sec-title">Zucker &amp; Süsse</div>
+  <div class="srow">
+    <div><div class="slabel">Zucker</div><div class="sdesc">Skaliert mit Gelatine</div></div>
+  </div>
+  <div class="sright">
+    <input type="range" id="s-sugar" min="20" max="160" step="5" value="80">
+    <div class="sval" id="v-sugar">80 g</div>
+  </div>
+
+  <div style="margin-top:0.5rem;">
+    <div class="srow">
+      <div><div class="slabel">Glukosesirup</div><div class="sdesc">Verhindert Kristallisation, macht Bärchen zäher</div></div>
+    </div>
+    <div class="sright">
+      <input type="range" id="s-glukose" min="0" max="80" step="5" value="30">
+      <div class="sval" id="v-glukose">30 g</div>
+    </div>
+  </div>
+
+  <div style="margin-top:0.5rem;">
+    <div class="srow">
+      <div><div class="slabel">Zitronensäure</div><div class="sdesc">Macht es säuerlicher</div></div>
+    </div>
+    <div class="sright">
+      <input type="range" id="s-acid" min="0" max="3" step="0.25" value="0.5">
+      <div class="sval" id="v-acid">0.5 TL</div>
+    </div>
+  </div>
+</div>
+
+<!-- EXTRAS -->
+<div class="sec">
+  <div class="sec-title">Extras</div>
+  <div class="sec-title" style="margin-bottom:0.4rem;">Lebensmittelfarbe</div>
+  <div class="chips" id="chips-color" style="margin-bottom:0.8rem;">
+    <button class="chip on" onclick="setColor(true)">Ja</button>
+    <button class="chip" onclick="setColor(false)">Nein</button>
+  </div>
+  <div class="sec-title" style="margin-bottom:0.4rem;">In Stärke/Zucker wälzen</div>
+  <div class="chips" id="chips-roll">
+    <button class="chip" onclick="setRoll('starch')">In Stärke</button>
+    <button class="chip" onclick="setRoll('sugar')">In Zucker</button>
+    <button class="chip on" onclick="setRoll('none')">Nichts</button>
+  </div>
+</div>
+
+<hr class="div">
+
+<!-- RESULT -->
+<div class="result">
+  <div class="res-head">
+    <div class="res-title" id="res-title">Dein Rezept</div>
+    <div class="res-meta" id="res-meta"></div>
+  </div>
+  <table class="itable" id="itable"></table>
+  <hr class="div" style="border-color:#D4C040;">
+  <div class="steps" id="steps"></div>
+  <div class="warns" id="warns"></div>
+  <div class="tips" id="tips"></div>
+</div>
+
+<div class="btnrow">
+  <button class="btn-pdf" id="btn-pdf" onclick="makePDF()">📄 PDF erstellen &amp; herunterladen</button>
+</div>
+<p class="note">PDF öffnet sich → dann Drucken (Cmd+P / Strg+P)</p>
+
+</div><!-- end page -->
+
+<script>
+// ======== FLAVORS ========
+const FLAVORS = [
+  { id:'lemon',      icon:'🍋', name:'Zitrone',    color:'#F5C518', juice:'Zitronensaft',   aromaHint:'Zitrone',     waterBase:20  },
+  { id:'orange',     icon:'🍊', name:'Orange',     color:'#FF7A00', juice:'Orangensaft',    aromaHint:'Orange',      waterBase:20  },
+  { id:'strawberry', icon:'🍓', name:'Erdbeere',   color:'#E8003D', juice:'Erdbeersaft',    aromaHint:'Erdbeere',    waterBase:20  },
+  { id:'raspberry',  icon:'🫐', name:'Himbeere',   color:'#C2185B', juice:'Himbeersaft',    aromaHint:'Himbeere',    waterBase:20  },
+  { id:'apple',      icon:'🍏', name:'Apfel',      color:'#4CAF50', juice:'Apfelsaft',      aromaHint:'Apfel',       waterBase:20  },
+  { id:'cola',       icon:'🥤', name:'Cola',       color:'#5D4037', juice:'Cola',           aromaHint:'Cola',        waterBase:30  },
+];
+
+let flavor = FLAVORS[0];
+let aromaMode = 'both';
+let hasColor = true;
+let rollMode = 'none';
+
+// BASE amounts for 40 Stück, 10 Gelatineblätter
+const BASE_QTY = 40;
+const BASE_GEL = 10;
+const BASE = {
+  juice: 60, water: 20, aroma: 2,
+  sugar: 80, glukose: 30, acid: 0.5
+};
+
+// ======== INIT ========
+function initFlavors() {
+  const g = document.getElementById('flavor-grid');
+  FLAVORS.forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'fbtn' + (f.id === flavor.id ? ' on' : '');
+    b.id = 'fb-' + f.id;
+    b.innerHTML = `<span class="ficon">${f.icon}</span><span class="fname">${f.name}</span>`;
+    b.onclick = () => setFlavor(f.id);
+    g.appendChild(b);
+  });
+}
+
+function setFlavor(id) {
+  flavor = FLAVORS.find(f => f.id === id);
+  FLAVORS.forEach(f => document.getElementById('fb-'+f.id).classList.toggle('on', f.id === id));
+  document.getElementById('juice-label').textContent = flavor.juice;
+  calc();
+}
+
+function setAromaMode(m) {
+  aromaMode = m;
+  document.querySelectorAll('#chips-aroma .chip').forEach((c,i) => {
+    c.classList.toggle('on', ['both','juice','aroma','none'][i] === m);
+  });
+  document.getElementById('aroma-wrap').style.display = (m === 'both' || m === 'aroma') ? 'block' : 'none';
+  // Set slider defaults
+  if (m === 'juice') { setSlider('s-juice', scaleVal(BASE.juice, getQty(), getGel())); setSlider('s-water', scaleVal(BASE.water, getQty(), getGel())); }
+  if (m === 'aroma') { setSlider('s-juice', 0); setSlider('s-water', scaleVal(80, getQty(), getGel())); }
+  if (m === 'none')  { setSlider('s-juice', 0); setSlider('s-water', scaleVal(80, getQty(), getGel())); }
+  calc();
+}
+
+function setColor(v) {
+  hasColor = v;
+  document.querySelectorAll('#chips-color .chip').forEach((c,i) => c.classList.toggle('on', i === (v?0:1)));
+  calc();
+}
+function setRoll(m) {
+  rollMode = m;
+  document.querySelectorAll('#chips-roll .chip').forEach((c,i) => {
+    c.classList.toggle('on', ['starch','sugar','none'][i] === m);
+  });
+  calc();
+}
+
+// ======== HELPERS ========
+function getQty() { return parseFloat(document.getElementById('s-qty').value); }
+function getGel() { return parseFloat(document.getElementById('s-gel').value); }
+function sv(id) { return parseFloat(document.getElementById(id).value); }
+function rnd(n, d=1) { return parseFloat(n.toFixed(d)); }
+function ri(n) { return Math.round(n); }
+
+function scaleVal(base, qty, gel) {
+  const qScale = qty / BASE_QTY;
+  const gScale = gel / BASE_GEL;
+  return base * qScale * gScale;
+}
+
+function setSlider(id, val) {
+  const el = document.getElementById(id);
+  el.value = val;
+  updateSliderBg(el);
+}
+
+function updateSliderBg(el) {
+  const min = parseFloat(el.min), max = parseFloat(el.max), val = parseFloat(el.value);
+  const pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
+  el.style.setProperty('--pct', pct);
+}
+
+// Main compute
+function calc() {
+  const qty = getQty();
+  const gel = sv('s-gel');
+  const juice = sv('s-juice');
+  const water = sv('s-water');
+  const aroma = sv('s-aroma');
+  const sugar = sv('s-sugar');
+  const glukose = sv('s-glukose');
+  const acid = sv('s-acid');
+
+  // Update display values
+  document.getElementById('v-qty').textContent = qty + ' Stk.';
+  document.getElementById('v-gel').textContent = gel + ' Bl.';
+  document.getElementById('v-juice').textContent = ri(juice) + ' ml';
+  document.getElementById('v-water').textContent = ri(water) + ' ml';
+  document.getElementById('v-aroma').textContent = ri(aroma) + ' Fl.';
+  document.getElementById('v-sugar').textContent = ri(sugar) + ' g';
+  document.getElementById('v-glukose').textContent = ri(glukose) + ' g';
+  document.getElementById('v-acid').textContent = rnd(acid) + ' TL';
+
+  // Festigkeit label
+  const festigkeit = gel <= 6 ? 'sehr weich' : gel <= 9 ? 'weich' : gel <= 12 ? 'klassisch' : gel <= 16 ? 'fest' : 'sehr fest';
+  document.getElementById('gel-desc').textContent = `Festigkeit: ${festigkeit} — alle Mengen skalieren mit`;
+
+  // Update slider backgrounds
+  ['s-qty','s-gel','s-juice','s-water','s-aroma','s-sugar','s-glukose','s-acid'].forEach(id => {
+    updateSliderBg(document.getElementById(id));
+  });
+
+  // Result title
+  document.getElementById('res-title').textContent = `${flavor.icon} ${flavor.name} Gummibärchen – ${qty} Stück`;
+  document.getElementById('res-meta').textContent = `Festigkeit: ${festigkeit}`;
+
+  // Build ingredients
+  const ings = [];
+  ings.push(['Gelatineblätter', gel + ' Blätter']);
+
+  if (aromaMode === 'both' || aromaMode === 'juice') {
+    ings.push([flavor.juice, ri(juice) + ' ml']);
+  }
+  ings.push(['Wasser', ri(water) + ' ml']);
+  if (glukose > 0) ings.push(['Glukosesirup', ri(glukose) + ' g']);
+  ings.push(['Zucker', ri(sugar) + ' g']);
+  if (aromaMode === 'both' || aromaMode === 'aroma') {
+    ings.push([`Dr. Oetker ${flavor.aromaHint}-Aroma`, ri(aroma) + ' Fläschchen']);
+  }
+  if (acid > 0) ings.push(['Zitronensäure', rnd(acid) + ' TL']);
+  if (hasColor) ings.push(['Lebensmittelfarbe (' + getColorHint() + ')', '2–3 Tropfen']);
+  if (rollMode === 'starch') ings.push(['Speisestärke (zum Wälzen)', 'nach Bedarf']);
+  if (rollMode === 'sugar') ings.push(['Zucker (zum Wälzen)', 'nach Bedarf']);
+
+  document.getElementById('itable').innerHTML = ings.map(([n,v]) =>
+    `<tr><td class="iname">${n}</td><td class="ival">${v}</td></tr>`
+  ).join('');
+
+  // Build steps
+  const totalLiq = ri(juice) + ri(water);
+  let s4 = '';
+  if (aromaMode === 'both') s4 = `${ri(juice)} ml ${flavor.juice} und ${ri(aroma)} Fläschchen ${flavor.aromaHint}-Aroma einrühren${acid>0?' sowie '+rnd(acid)+' TL Zitronensäure':''}.${flavor.id !== 'lemon' ? ' Durch ein feines Sieb giessen.' : ''}`;
+  else if (aromaMode === 'juice') s4 = `${ri(juice)} ml ${flavor.juice} einrühren${acid>0?' und '+rnd(acid)+' TL Zitronensäure dazugeben':''}.`;
+  else if (aromaMode === 'aroma') s4 = `${ri(aroma)} Fläschchen ${flavor.aromaHint}-Aroma einrühren${acid>0?' sowie '+rnd(acid)+' TL Zitronensäure':''}.`;
+  else s4 = `Masse abschmecken${acid>0?' und '+rnd(acid)+' TL Zitronensäure einrühren':''}.`;
+
+  const glukoseStep = glukose > 0
+    ? `${ri(sugar)} g Zucker, ${ri(glukose)} g Glukosesirup und ${ri(water)} ml Wasser`
+    : `${ri(sugar)} g Zucker und ${ri(water)} ml Wasser`;
+
+  const stepsData = [
+    ['Gelatine einweichen', `${gel} Blätter in kaltem Wasser 5–10 Minuten einweichen bis sie weich sind. Gut ausdrücken.`],
+    ['Sirup kochen', `${glukoseStep} in einem Topf bei mittlerer Hitze erhitzen. Rühren bis alles aufgelöst ist. Nicht kochen – max. 70–80 °C.`],
+    ['Gelatine auflösen', `Topf vom Herd nehmen, kurz auf ~60 °C abkühlen lassen. Ausgedrückte Gelatine einrühren bis vollständig aufgelöst.`],
+    ['Aroma einrühren', s4],
+    ['Formen vorbereiten', `Silikonformen leicht mit Speisestärke ausklopfen (verhindert Kleben). Masse mit einer Pipette einfüllen.`],
+    ['Kühl stellen', `Formen abdecken, für mindestens 24 Stunden in den Kühlschrank. Länger = besser – Bärchen werden zäher.`],
+    ['Herauslösen', `Gummibärchen vorsichtig aus den Formen drücken.${rollMode==='starch' ? ' In Speisestärke wälzen, dann abklopfen.' : rollMode==='sugar' ? ' In feinem Zucker wälzen.' : ' So lassen oder kurz an der Luft trocknen.'}`],
+  ];
+
+  document.getElementById('steps').innerHTML = stepsData.map(([t,tx], i) =>
+    `<div class="step"><div class="snum">${i+1}</div><div class="stxt"><strong>${t}:</strong> ${tx}</div></div>`
+  ).join('');
+
+  // Warnings
+  const ws = [];
+  if (gel > 16) ws.push('⚠️ Sehr viele Gelatineblätter – die Bärchen werden sehr fest und gummiartig.');
+  if (gel < 6) ws.push('⚠️ Wenig Gelatine – die Bärchen werden sehr weich und kleben evtl. aneinander.');
+  if (glukose === 0) ws.push('💡 Ohne Glukosesirup kann Zucker auskristallisieren – die Bärchen werden körnig. Empfehlung: mind. 20 g.');
+  if (totalLiq > 130) ws.push('💧 Viel Flüssigkeit – Bärchen brauchen mind. 24 Std. zum Festwerden.');
+  if (aromaMode === 'none') ws.push('🍬 Ohne Aroma werden die Bärchen neutral-süss – füge einen Fruchtsaft hinzu für mehr Geschmack.');
+  document.getElementById('warns').innerHTML = ws.map(w => `<div class="warn">${w}</div>`).join('');
+
+  // Tips
+  document.getElementById('tips').innerHTML = [
+    `<div class="tip">⏱ Kühlzeit: <b>mind. 24 Std.</b></div>`,
+    `<div class="tip">🫙 Haltbarkeit: <b>1–2 Wochen</b> (kühl)</div>`,
+    `<div class="tip">💧 Flüssigkeit total: <b>${totalLiq} ml</b></div>`,
+    `<div class="tip">🎯 Festigkeit: <b>${festigkeit}</b></div>`,
+  ].join('');
+}
+
+function getColorHint() {
+  const map = {lemon:'gelb',orange:'orange',strawberry:'rot',raspberry:'pink',apple:'grün',cola:'braun'};
+  return map[flavor.id] || 'passend';
+}
+
+// ======== AUTO-SCALE on gel/qty change ========
+function onGelChange() {
+  const gel = sv('s-gel');
+  const qty = getQty();
+  const qS = qty / BASE_QTY;
+  const gS = gel / BASE_GEL;
+  const scale = qS * gS;
+
+  // Scale all linked sliders
+  const links = [
+    ['s-juice', BASE.juice, aromaMode === 'both' || aromaMode === 'juice'],
+    ['s-water', aromaMode === 'aroma' || aromaMode === 'none' ? 80 : BASE.water, true],
+    ['s-aroma', BASE.aroma, true],
+    ['s-sugar', BASE.sugar, true],
+    ['s-glukose', BASE.glukose, true],
+  ];
+  links.forEach(([id, base, active]) => {
+    if (!active) return;
+    const el = document.getElementById(id);
+    const newVal = Math.min(Math.max(base * scale, parseFloat(el.min)), parseFloat(el.max));
+    el.value = Math.round(newVal / parseFloat(el.step)) * parseFloat(el.step);
+    updateSliderBg(el);
+  });
+  calc();
+}
+
+function onQtyChange() { onGelChange(); }
+
+// Attach events
+document.getElementById('s-gel').addEventListener('input', onGelChange);
+document.getElementById('s-qty').addEventListener('input', onQtyChange);
+['s-juice','s-water','s-aroma','s-sugar','s-glukose','s-acid'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calc);
+});
+
+// ======== PDF ========
+function makePDF() {
+  const btn = document.getElementById('btn-pdf');
+  btn.disabled = true; btn.textContent = '⏳ Wird erstellt…';
+
+  setTimeout(() => {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const W = 210, ml = 18, mr = 18, cw = W - ml - mr;
+      const Y = [245, 197, 24], Yt = [50, 38, 0], Ym = [160, 130, 20];
+      const BG = [255, 251, 230], TX = [26, 25, 22], MU = [120, 117, 103];
+
+      let y = 0;
+
+      // Header strip
+      doc.setFillColor(...BG);
+      doc.rect(0, 0, 210, 40, 'F');
+      doc.setFillColor(...Y);
+      doc.rect(0, 40, 210, 1, 'F');
+
+      y = 14;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setTextColor(...TX);
+      doc.text(`${flavor.name}-Gummibärchen`, ml, y);
+
+      y += 7;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...MU);
+      const qty = getQty(), gel = sv('s-gel');
+      const festigkeit = gel <= 6 ? 'sehr weich' : gel <= 9 ? 'weich' : gel <= 12 ? 'klassisch' : gel <= 16 ? 'fest' : 'sehr fest';
+      doc.text(`${qty} Stück  •  Festigkeit: ${festigkeit}  •  Kühlzeit: mindestens 24 Stunden  •  Haltbarkeit: 1–2 Wochen`, ml, y);
+
+      y = 48;
+
+      // Helper: yellow header bar
+      const bar = (label, yy) => {
+        doc.setFillColor(...Y);
+        doc.roundedRect(ml, yy, cw, 7, 1.5, 1.5, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...Yt);
+        doc.text(label, ml + 4, yy + 5);
+        return yy + 10;
+      };
+
+      // Ingredients
+      y = bar('ZUTATEN', y);
+      const rows = document.querySelectorAll('#itable tr');
+      rows.forEach((r, i) => {
+        if (i % 2 === 0) { doc.setFillColor(255, 251, 230); doc.rect(ml, y, cw, 7, 'F'); }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(...MU);
+        doc.text(r.cells[0].textContent, ml + 3, y + 5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...Ym);
+        doc.text(r.cells[1].textContent, W - mr - 3, y + 5, { align: 'right' });
+        y += 7;
+      });
+
+      y += 6;
+
+      // Steps
+      y = bar('ZUBEREITUNG', y);
+      const stepEls = document.querySelectorAll('#steps .step');
+      stepEls.forEach((s, i) => {
+        // number circle
+        doc.setFillColor(...Y);
+        doc.circle(ml + 3.5, y + 3, 3, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...Yt);
+        doc.text(String(i+1), ml + 3.5, y + 4.5, { align: 'center' });
+
+        const txt = s.querySelector('.stxt').textContent;
+        const bold = txt.split(':')[0] + ':';
+        const rest = txt.substring(bold.length);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(...TX);
+        const bw = doc.getTextWidth(bold);
+        doc.text(bold, ml + 9, y + 3.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...MU);
+        const lines = doc.splitTextToSize(rest.trim(), cw - 13 - bw);
+        doc.text(lines, ml + 9 + bw + 1, y + 3.5);
+        y += 3.5 + lines.length * 5 + 4;
+      });
+
+      // Tips box
+      y += 2;
+      doc.setFillColor(...BG);
+      doc.roundedRect(ml, y, cw, 16, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...Yt);
+      const totalLiq = ri(sv('s-juice')) + ri(sv('s-water'));
+      doc.text(`Flüssigkeit gesamt: ${totalLiq} ml   •   Festigkeit: ${festigkeit}   •   Sorte: ${flavor.name}`, ml + 4, y + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...MU);
+      doc.text('Gummibärchen am besten 24–48 Std. kühlen, dann 12 Std. an der Luft trocknen lassen.', ml + 4, y + 12);
+
+      // Footer
+      doc.setFillColor(...Y);
+      doc.rect(0, 282, 210, 15, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...Yt);
+      doc.text('Selbstgemachte Gummibärchen', ml, 291);
+      doc.text(new Date().toLocaleDateString('de-CH'), W - mr, 291, { align: 'right' });
+
+      const blob = doc.output('blob');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Gummibaerchen_${flavor.name}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+
+    } catch(e) { alert('Fehler: ' + e.message); }
+    btn.disabled = false;
+    btn.innerHTML = '📄 PDF erstellen &amp; herunterladen';
+  }, 80);
+}
+
+function ri(n) { return Math.round(n); }
+
+// Init
+initFlavors();
+calc();
+</script>
+</body>
+</html>
